@@ -1,0 +1,48 @@
+# Taxation experiment.
+# A competitive market runs untaxed, then a per-unit tax is introduced, switched to an
+# ad valorem tax, and finally removed. The analysis page reports volume, total surplus,
+# deadweight loss and tax revenue before and after each change.
+name: taxation
+description: Per-unit then ad valorem tax on a competitive market.
+experiment_type: taxation
+seed: 3
+rounds: 80
+round_delay_ms: 200
+
+goods:
+  - id: grain
+    initial_price: 100
+
+llm:
+  provider: mock
+  max_concurrency: 16
+
+agents:
+  - role: buyer
+    count: 30
+    decision: llm
+    cash: 2500
+    income_per_round: 300
+    units_per_round: 2
+    valuations:
+      grain: {dist: uniform, low: 50, high: 150}
+
+  - role: seller
+    count: 12
+    decision: llm
+    cash: 1000
+    costs:
+      grain: {dist: uniform, low: 40, high: 120}
+    capacity: {grain: 4}
+
+  - role: regulator
+    count: 1
+    decision: schedule
+
+policy:
+  schedule:
+    - {round: 20, action: set_tax, good: grain, tax_type: per_unit, rate: 20, payer: seller, reason: "excise introduced"}
+    - {round: 40, action: remove_tax, good: grain}
+    - {round: 41, action: set_tax, good: grain, tax_type: ad_valorem, rate: 0.2, payer: buyer, reason: "sales tax"}
+    - {round: 60, action: remove_tax, good: grain, reason: "repeal"}
+  bounds: {max_per_unit_tax: 60, max_ad_valorem: 0.6, max_subsidy: 40}

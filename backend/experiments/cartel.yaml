@@ -1,0 +1,53 @@
+# Cartel experiment.
+# A few producers share a private chat channel before every round. Measure markup over
+# marginal cost, the collusion index relative to the joint-profit (monopoly) price, and
+# whether ask prices converge with or without explicit agreement.
+# Set strategy.params.explicit: false (or use cartel_tacit.yaml) for a no-talk-about-prices control.
+name: cartel
+description: Four producers with a pre-round communication channel.
+experiment_type: cartel
+seed: 11
+rounds: 60
+round_delay_ms: 300
+
+goods:
+  - id: cement
+    initial_price: 80
+
+market:
+  order_ttl: 1
+  max_orders_per_agent: 4
+  max_quantity_per_order: 30
+  communication:
+    enabled: true
+    participants: [seller]
+    max_message_chars: 280
+    history_rounds: 3
+
+llm:
+  provider: mock
+  model: claude-opus-5-5
+  effort: low
+  max_concurrency: 8
+
+agents:
+  - role: buyer
+    count: 24
+    decision: heuristic
+    cash: 3000
+    income_per_round: 300
+    units_per_round: 2
+    valuations:
+      cement: {dist: uniform, low: 50, high: 160}
+
+  - role: seller
+    count: 4
+    decision: llm
+    strategy:
+      name: collusive_seller
+      params: {explicit: true, min_markup: 0.05, drift: 0.02}
+    cash: 1000
+    costs:
+      cement: {dist: uniform, low: 45, high: 60}
+    capacity: {cement: 10}
+    cost_slope: 1.0

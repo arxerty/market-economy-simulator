@@ -1,0 +1,66 @@
+# Speculative bubble experiment.
+# Momentum-trading speculators with delayed information trade alongside consumers and
+# producers. Vary `count` and `info_lag` of the speculator group to study how speculator
+# density and information lag drive price deviation from fundamental value and crash timing.
+name: bubble
+description: Trend-following speculators with lagged information inflate and crash prices.
+experiment_type: bubble
+seed: 7
+rounds: 80
+round_delay_ms: 250
+
+goods:
+  - id: widget
+    initial_price: 90
+    fundamental_value: auto   # competitive equilibrium of induced supply & demand
+
+market:
+  order_ttl: 1
+  max_orders_per_agent: 4
+  max_quantity_per_order: 40
+
+llm:
+  provider: mock            # switch to `anthropic` for real LLM agents
+  model: claude-opus-5-5
+  effort: low
+  max_concurrency: 8
+  timeout_s: 30
+  max_retries: 2
+  cache: {mode: record, path: data/llm_cache.sqlite}   # record | replay | strict_replay | off
+
+agents:
+  - role: buyer
+    count: 20
+    decision: heuristic
+    cash: 2000
+    income_per_round: 250
+    units_per_round: 2
+    valuations:
+      widget: {dist: uniform, low: 60, high: 140}
+
+  - role: seller
+    count: 8
+    decision: heuristic
+    cash: 1000
+    costs:
+      widget: {dist: uniform, low: 40, high: 100}
+    capacity: {widget: 4}
+
+  - role: speculator
+    count: 10                  # speculator density
+    info_lag: 2                # rounds of delay on market data
+    decision: llm
+    strategy:
+      name: trend_follower
+      params: {window: 3, threshold: 0.01, aggressiveness: 0.04, cash_fraction: 0.35, noise: 0.015}
+    cash: 4000
+    inventory: {widget: 10}
+
+  - role: regulator
+    count: 1
+    decision: schedule         # try `heuristic` (bubble stabilizer) or `llm`
+
+policy:
+  schedule: []
+  stabilizer_threshold: 0.3
+  stabilizer_tax: 0.05

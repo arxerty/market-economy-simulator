@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      # Only needed for experiments with `llm.provider: anthropic`
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - sim-data:/app/data            # event logs (runs/) and the LLM response cache
+      - ./backend/experiments:/app/experiments
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  sim-data:

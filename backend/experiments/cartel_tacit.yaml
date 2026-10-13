@@ -1,0 +1,39 @@
+# Control for the cartel experiment: identical market, but sellers' messages never mention
+# prices. Any supra-competitive convergence here is tacit (no explicit agreement).
+name: cartel_tacit
+description: Same as cartel, but channel talk carries no price signals.
+experiment_type: cartel
+seed: 11
+rounds: 60
+round_delay_ms: 300
+
+goods:
+  - id: cement
+    initial_price: 80
+
+market:
+  communication: {enabled: true, participants: [seller]}
+
+llm:
+  provider: mock
+
+agents:
+  - role: buyer
+    count: 24
+    decision: heuristic
+    cash: 3000
+    income_per_round: 300
+    units_per_round: 2
+    valuations:
+      cement: {dist: uniform, low: 50, high: 160}
+  - role: seller
+    count: 4
+    decision: llm
+    strategy:
+      name: collusive_seller
+      params: {explicit: false, min_markup: 0.05, drift: 0.02}
+    cash: 1000
+    costs:
+      cement: {dist: uniform, low: 45, high: 60}
+    capacity: {cement: 10}
+    cost_slope: 1.0

@@ -1,0 +1,51 @@
+# Two-good competitive baseline with an LLM regulator. Good starting point for custom experiments.
+name: baseline
+description: Two goods, consumers, producers, a few fundamentalist traders and an LLM regulator.
+experiment_type: generic
+seed: 42
+rounds: 50
+round_delay_ms: 300
+
+goods:
+  - id: bread
+    initial_price: 10
+    tick: 0.01
+  - id: coffee
+    initial_price: 25
+    tick: 0.05
+
+llm:
+  provider: mock
+  model: claude-opus-5-5
+  effort: low
+
+agents:
+  - role: buyer
+    count: 16
+    cash: 800
+    income_per_round: 60
+    units_per_round: 2
+    valuation_decay: 0.1
+    valuations:
+      bread: {dist: uniform, low: 6, high: 16}
+      coffee: {dist: normal, mean: 25, std: 6, min: 5}
+  - role: seller
+    count: 4
+    id_prefix: SB
+    costs: {bread: {dist: uniform, low: 4, high: 10}}
+    capacity: {bread: 6}
+    cost_slope: 0.3
+  - role: seller
+    count: 3
+    id_prefix: SC
+    costs: {coffee: {dist: uniform, low: 12, high: 24}}
+    capacity: {coffee: 5}
+  - role: speculator
+    count: 3
+    strategy: {name: fundamentalist, params: {band: 0.08}}
+    cash: 1500
+    inventory: {bread: 10, coffee: 5}
+  - role: regulator
+    count: 1
+    decision: llm
+    objective: Maximise total surplus; intervene only if prices drift far from fundamentals.
